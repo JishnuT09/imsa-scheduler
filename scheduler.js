@@ -287,6 +287,31 @@ $(document).ready(function () {
         newWin.document.write(divToPrint.outerHTML);
     };
 
+    echoClass = function () {
+        $("#schedule tr").each(function() {
+            var modText = $(this).find("th.mods").text().trim();
+            var modNumber = modText.split("\n")[0];
+
+            // Find all <td> cells in this row
+            $(this).find("td").each(function() {
+                // Extract class info
+                var className = $(this).find("b").text().trim();
+                var room = $(this).find("u").text().trim();
+                var teacher = $(this).find("p").last().text().trim();
+
+                if (className) {
+                    alert(
+                        "Mod: " + modNumber + "\n" +
+                        "Class: " + className + "\n" +
+                        "Room: " + room + "\n" +
+                        "Teacher: " + teacher
+                    );
+                }
+            });
+        });
+
+    }
+
     // Clear the schedule commander.
     resetScheduleCommand = function () {
         var table = $("#mod-entry")[0];
@@ -398,4 +423,28 @@ function invert(obj) {
         }
     }
     return new_obj;
+}
+
+function handleClientLoad() {
+    gapi.load('client:auth2', initClient); // load client + auth2 modules
+}
+
+function initClient() {
+    gapi.client.init({
+        clientId: 'wow',
+        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
+        scope: "https://www.googleapis.com/auth/calendar.events"
+    }).then(() => {
+        const authInstance = gapi.auth2.getAuthInstance();
+
+        // Optional: check if already signed in
+        if (!authInstance.isSignedIn.get()) {
+            authInstance.signIn().then(user => {
+                console.log('Signed in as', user.getBasicProfile().getName());
+                // Now you can call your function to add calendar events
+            }).catch(err => console.error('Sign-in error', err));
+        } else {
+            console.log("Already signed in");
+        }
+    }).catch(err => console.error('Client init error', err));
 }
