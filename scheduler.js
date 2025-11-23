@@ -425,26 +425,7 @@ function invert(obj) {
     return new_obj;
 }
 
-function handleClientLoad() {
-    gapi.load('client:auth2', initClient); // load client + auth2 modules
-}
-
-function initClient() {
-    gapi.client.init({
-        clientId: 'wow',
-        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
-        scope: "https://www.googleapis.com/auth/calendar.events"
-    }).then(() => {
-        const authInstance = gapi.auth2.getAuthInstance();
-
-        // Optional: check if already signed in
-        if (!authInstance.isSignedIn.get()) {
-            authInstance.signIn().then(user => {
-                console.log('Signed in as', user.getBasicProfile().getName());
-                // Now you can call your function to add calendar events
-            }).catch(err => console.error('Sign-in error', err));
-        } else {
-            console.log("Already signed in");
-        }
-    }).catch(err => console.error('Client init error', err));
+function downloadIcal() {
+    let email = document.getElementById("email").value;
+    alert("This feature is under development and will be available in a future update! " + email)
 }

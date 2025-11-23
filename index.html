@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <title>George's Schedule Machine</title>
@@ -292,9 +292,10 @@
         </button>
         <button id="save-button"
                 class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
-                onClick="handleClientLoad()">
+                onClick="downloadIcal()">
             Save to Google Calendar
         </button>
+        <input id="email" type="text" placeholder="Enter email..." style="padding: 2px;  height: 27px; width: 250px; border: 1px solid #ccc; border-radius: 6px;"/>
         <br><br>
         <p class="protip protip-green"><i><b>Protip: Mistakes are OK! Double-click on a box to clear its contents.</b>
             This fights glitches, too!</i></p>
