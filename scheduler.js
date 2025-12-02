@@ -396,39 +396,6 @@ $(document).ready(function () {
         $("#powerschool-entry").val(getParameterByName("scode"));
         autoSchedule();
     }
-
-    getScheduleData = function () {
-        var scheduleData = [];
-        $("#schedule tr").each(function() {
-            var modText = $(this).find("th.mods").text().trim();
-            var modNumber = modText.split("\n")[0];
-
-            // Find all <td> cells in this row
-            $(this).find("td").each(function() {
-                // Extract class info
-                var className = $(this).find("b").text().trim();
-                var room = $(this).find("u").text().trim();
-                var teacher = $(this).find("p").last().text().trim();
-                var dayIndex = $(this).index() - 1;
-                if (className) {
-                    var scheduleClass = scheduleData.find(scheduleClass => scheduleClass.className === className)
-                    if (scheduleClass) {
-                        if (scheduleClass.daysOfWeek.includes(dayIndex)) {
-                            scheduleClass.durationMinutes = 105;
-                        }
-                        else {
-                            scheduleClass.daysOfWeek.push(dayIndex);
-                        }
-                    }
-                    else {
-                        scheduleClass = new ScheduleItem(modNumber.substring(1), className, room, teacher, [dayIndex], 50);
-                        scheduleData.push(scheduleClass);
-                    }
-                }
-            });
-        });
-        return scheduleData;
-    }
 });
 
 // Creates a dictionary with the keys and values swapped:
@@ -443,6 +410,41 @@ function invert(obj) {
     return new_obj;
 }
 
+// Extract schedule data from the table for iCal conversion
+getScheduleData = function () {
+    var scheduleData = [];
+    $("#schedule tr").each(function() {
+        var modText = $(this).find("th.mods").text().trim();
+        var modNumber = modText.split("\n")[0];
+
+        // Find all <td> cells in this row
+        $(this).find("td").each(function() {
+            // Extract class info
+            var className = $(this).find("b").text().trim();
+            var room = $(this).find("u").text().trim();
+            var teacher = $(this).find("p").last().text().trim();
+            var dayIndex = $(this).index() - 1;
+            if (className) {
+                var scheduleClass = scheduleData.find(scheduleClass => scheduleClass.className === className)
+                if (scheduleClass) {
+                    if (scheduleClass.daysOfWeek.includes(dayIndex)) {
+                        scheduleClass.durationMinutes = 105;
+                    }
+                    else {
+                        scheduleClass.daysOfWeek.push(dayIndex);
+                    }
+                }
+                else {
+                    scheduleClass = new ScheduleItem(modNumber.substring(1), className, room, teacher, [dayIndex], 50);
+                    scheduleData.push(scheduleClass);
+                }
+            }
+        });
+    });
+    return scheduleData;
+}
+
+// Download the iCal file
 function downloadIcal() {
     /*let email = document.getElementById("email").value;
     const strictEmailRegex = /^(?=.{1,254}$)[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
@@ -472,6 +474,7 @@ function downloadIcal() {
     alert("Your schedule has been downloaded as schedule.ics, you can now import it into your calendar application!");
 }
 
+// Convert schedule data to iCal format
 function convertToIcal(scheduleData) {
     const allEvents = [];
 
@@ -500,6 +503,7 @@ END:VCALENDAR`;
     return icalFile;
 }
 
+// Create iCal VEVENT for a class
 function createIcalEvent(classItem) {
     // Parse the mod time (e.g., "28:55AM")
     const timeMatch = classItem.time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
