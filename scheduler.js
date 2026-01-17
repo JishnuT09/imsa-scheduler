@@ -446,13 +446,6 @@ getScheduleData = function () {
 
 // Download the iCal file
 function downloadIcal() {
-    /*let email = document.getElementById("email").value;
-    const strictEmailRegex = /^(?=.{1,254}$)[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-    if (!strictEmailRegex.test(email)) {
-        alert("Please enter a valid email address.");
-        return;
-    }*/
-
     const scheduleData = getScheduleData();
     icalFile = convertToIcal(scheduleData)
 
