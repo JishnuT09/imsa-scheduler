@@ -167,7 +167,7 @@ input {
     display: none;
 }
 
-#submit-button, #auto-button, #print-button, #reset-button {
+.schedule-button {
     font-size: 12pt;
     font-weight: 300;
 }
