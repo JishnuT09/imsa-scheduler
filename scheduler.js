@@ -424,42 +424,8 @@ function invert(obj) {
     return new_obj;
 }
 
-// Extract schedule data from the table for iCal conversion
-getScheduleData = function () {
-    $("#schedule tr").each(function() {
-        var modText = $(this).find("th.mods").text().trim();
-        var modNumber = modText.split("\n")[0];
-
-        // Find all <td> cells in this row
-        $(this).find("td").each(function() {
-            // Extract class info
-            var className = $(this).find("b").text().trim();
-            var room = $(this).find("u").text().trim();
-            var teacher = $(this).find("p").last().text().trim();
-            var dayIndex = $(this).index() - 1;
-            if (className) {
-                var scheduleClass = scheduleData.find(scheduleClass => scheduleClass.className === className)
-                if (scheduleClass) {
-                    if (scheduleClass.daysOfWeek.includes(dayIndex)) {
-                        scheduleClass.durationMinutes = 105;
-                    }
-                    else {
-                        scheduleClass.daysOfWeek.push(dayIndex);
-                    }
-                }
-                else {
-                    scheduleClass = new ScheduleItem(modNumber.substring(1), className, room, teacher, [dayIndex], 50);
-                    scheduleData.push(scheduleClass);
-                }
-            }
-        });
-    });
-    return scheduleData;
-}
-
 // Download the iCal file
 function downloadIcal() {
-    const scheduleData = getScheduleData();
     icalFile = convertToIcal(scheduleData)
 
     const blob = new Blob([icalFile], { type: 'text/calendar;charset=utf-8' });
@@ -481,12 +447,11 @@ function downloadIcal() {
 }
 
 // Convert schedule data to iCal format
-function convertToIcal(scheduleData) {
+function convertToIcal(classes) {
     const allEvents = [];
 
-    // Generate events for each class
-    for (var i = 0; i < scheduleData.length; i++) {
-        var classItem = scheduleData[i];
+    for (var i = 0; i < classes.length; i++) {
+        var classItem = classes[i];
         try {
             const classEvents = createIcalEvent(classItem);
             allEvents.push(classEvents);
@@ -495,7 +460,6 @@ function convertToIcal(scheduleData) {
         }
     }
 
-    // Wrap all events in VCALENDAR
     const icalFile = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//IMSA Calendar//Class Schedule//EN
@@ -505,67 +469,57 @@ METHOD:PUBLISH
 ${allEvents.join('\n\n')}
 
 END:VCALENDAR`;
-
+    console.log(icalFile)
     return icalFile;
 }
 
 // Create iCal VEVENT for a class
 function createIcalEvent(classItem) {
-    // Parse the mod time (e.g., "28:55AM")
-    const timeMatch = classItem.time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-    if (!timeMatch) {
-        throw new Error("Invalid time format");
-    }
-    let hours = parseInt(timeMatch[1]);
-    const minutes = parseInt(timeMatch[2]);
-    const period = timeMatch[3]?.toUpperCase();
+    const modTimes = {
+        1: { hours: 8,  minutes: 0  },
+        2: { hours: 8,  minutes: 55 },
+        3: { hours: 9,  minutes: 50 },
+        4: { hours: 10, minutes: 45 },
+        5: { hours: 12, minutes: 10 },
+        6: { hours: 13, minutes: 5  },
+        7: { hours: 14, minutes: 35 },
+        8: { hours: 15, minutes: 30 }
+    };
 
-    // Convert to 24-hour format
-    if (period === "PM" && hours !== 12) {
-        hours += 12;
-    } else if (period === "AM" && hours === 12) {
-        hours = 0;
-    }
-
-    // Day mapping
     const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    // Generate VEVENT for each day
-    const vevents = classItem.daysOfWeek.map((dayIndex, idx) => {
-        // Get next occurrence of this day
-        const now = new Date();
-        const currentDay = now.getDay();
 
-        const targetDay = dayIndex + 1;
+    const time = modTimes[classItem.mod];
+    if (!time) throw new Error("Invalid mod: " + classItem.mod);
 
-        let daysUntilTarget = targetDay - currentDay;
-        if (daysUntilTarget <= 0) {
-            daysUntilTarget += 7;
-        }
+    const now = new Date();
+    const targetDay = classItem.day + 1; // day is 0-4, getDay() is 1-5 for Mon-Fri
 
-        const startDate = new Date(now);
-        startDate.setDate(now.getDate() + daysUntilTarget);
-        startDate.setHours(hours, minutes, 0, 0);
+    let daysUntilTarget = targetDay - now.getDay();
+    if (daysUntilTarget <= 0) daysUntilTarget += 7;
 
-        const endDate = new Date(startDate);
-        endDate.setMinutes(endDate.getMinutes() + classItem.durationMinutes);
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() + daysUntilTarget);
+    startDate.setHours(time.hours, time.minutes, 0, 0);
 
-        // Format datetime (YYYYMMDDTHHmmss)
-        const formatDateTime = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hour = String(date.getHours()).padStart(2, '0');
-            const minute = String(date.getMinutes()).padStart(2, '0');
-            const second = String(date.getSeconds()).padStart(2, '0');
-            return `${year}${month}${day}T${hour}${minute}${second}`;
-        };
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + 50); // each mod is 50 minutes
 
-        const dtStart = formatDateTime(startDate);
-        const dtEnd = formatDateTime(endDate);
-        const dtStamp = formatDateTime(new Date());
-        const uid = `${classItem.className.replace(/\s+/g, '-').toLowerCase()}-${dayNames[dayIndex].toLowerCase()}-${Date.now()}@imsa.calendar`;
+    const formatDateTime = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hour = String(date.getHours()).padStart(2, '0');
+        const minute = String(date.getMinutes()).padStart(2, '0');
+        const second = String(date.getSeconds()).padStart(2, '0');
+        return `${year}${month}${day}T${hour}${minute}${second}`;
+    };
 
-        return `BEGIN:VEVENT
+    const dtStart = formatDateTime(startDate);
+    const dtEnd = formatDateTime(endDate);
+    const dtStamp = formatDateTime(new Date());
+    const uid = `${classItem.className.replace(/\s+/g, '-').toLowerCase()}-${dayNames[classItem.day].toLowerCase()}-${Date.now()}@imsa.calendar`;
+
+    return `BEGIN:VEVENT
 UID:${uid}
 DTSTAMP:${dtStamp}
 DTSTART:${dtStart}
@@ -575,6 +529,4 @@ LOCATION:${classItem.room}
 DESCRIPTION:Teacher: ${classItem.teacher}
 RRULE:FREQ=WEEKLY
 END:VEVENT`;
-        });
-    return vevents.join('\n\n');
 }
