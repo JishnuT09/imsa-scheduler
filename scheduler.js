@@ -117,7 +117,7 @@ $(document).ready(function () {
         }
     }
 
-    // Grab information from the Schedule Commander, and add and remove classes as needed. #TODO
+    // Grab information from the Schedule Commander, and add and remove classes as needed.
     updateSchedule = function () {
         try {
             var table = $("#mod-entry")[0];
@@ -146,6 +146,18 @@ $(document).ready(function () {
             var color = colors["red"];
             if (pickedColor) {
                 color = colors[pickedColor]
+            }
+
+             // Remove old entries for this class from scheduleData
+            scheduleData = scheduleData.filter(item => item.className !== className);
+
+            // Push new ScheduleItems for each selected cell
+            for (var i = 0; i < mods.length; i++) {
+                for (var j = 0; j < mods[i].length; j++) {
+                    if (mods[i][j] === true) {
+                        scheduleData.push(new ScheduleItem(className, teacherName, roomName, color, i + 1, j));
+                    }
+                }
             }
 
             // Clear entries for the selected class that are in the table (resetting the table for that class)
