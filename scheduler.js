@@ -6,15 +6,18 @@ function getParameterByName(name) {
 }
 
 class ScheduleItem {
-    constructor(time, className, room, teacher, daysOfWeek, durationMinutes) {
-        this.time = time;
+    constructor(className, teacher, room, color, mod, day) {
         this.className = className;
-        this.room = room;
         this.teacher = teacher;
-        this.daysOfWeek = daysOfWeek;
-        this.durationMinutes = durationMinutes;
+        this.room = room;
+        this.color = color;  // RGB
+        this.mod = mod;      // 1-8
+        this.day = day;      // 0-4
     }
 }
+
+var scheduleData = [];
+var usedColors = [];
 
 // Make these functions available to the DOM
 var updateSchedule;
@@ -173,7 +176,7 @@ $(document).ready(function () {
     // Parse data from the PowerSchool textfield and update the schedule
     autoSchedule = function () {
         try {
-
+            var usedColors = []
             // Get data from the PowerSchool textfield. Split by line, and tokenize lines by tabs.
             var powerschool = $("#powerschool-entry").val();
             powerschool = powerschool.split("\n");
@@ -197,7 +200,10 @@ $(document).ready(function () {
                 var roomName = entry[5];
 
                 // Pick a random color
-                var color = colors[Object.keys(colors)[Math.floor(Math.random() * Object.keys(colors).length)]];
+                var availableColors = Object.keys(colors).filter(key => !usedColors.includes(colors[key]));
+                if (availableColors.length === 0) availableColors = Object.keys(colors);
+                var color = colors[availableColors[Math.floor(Math.random() * availableColors.length)]];
+                usedColors.push(color);
 
                 // Use regex to split the expression into mods and days.
                 expression = expression.replace(/ +/g, "");
@@ -270,7 +276,16 @@ $(document).ready(function () {
                         mods[2][2] = true;
                     }
 
-                    addToTable(className, teacherName, roomName, mods, color)
+                    // Push a ScheduleItem for each selected mod/day combination
+                    for (var i = 0; i < mods.length; i++) {
+                        for (var j = 0; j < mods[i].length; j++) {
+                            if (mods[i][j] === true) {
+                                scheduleData.push(new ScheduleItem(className, teacherName, roomName, color, i + 1, j));
+                            }
+                        }
+                    }
+
+                    addToTable(className, teacherName, roomName, mods, color);
                 });
             });
 
@@ -278,7 +293,6 @@ $(document).ready(function () {
             var $autoSuccess = $("#auto-success");
             $autoSuccess.css("opacity", 1);
             $autoSuccess.animate({opacity: 0}, 1000);
-
         } catch (e) {
             // An error occurred?? Of course. Show a message.
             var $autoMessages = $("#auto-messages");
@@ -412,7 +426,6 @@ function invert(obj) {
 
 // Extract schedule data from the table for iCal conversion
 getScheduleData = function () {
-    var scheduleData = [];
     $("#schedule tr").each(function() {
         var modText = $(this).find("th.mods").text().trim();
         var modNumber = modText.split("\n")[0];
