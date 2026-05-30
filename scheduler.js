@@ -117,7 +117,7 @@ $(document).ready(function () {
         }
     }
 
-    // Grab information from the Schedule Commander, and add and remove classes as needed.
+    // Grab information from the Schedule Commander, and add and remove classes as needed. #TODO
     updateSchedule = function () {
         try {
             var table = $("#mod-entry")[0];
@@ -450,8 +450,25 @@ function downloadIcal() {
 function convertToIcal(classes) {
     const allEvents = [];
 
+    // Merge consecutive same-class same-day items into one with durationMinutes = 105
+    const mergedClasses = [];
+    const seen = {};
+
     for (var i = 0; i < classes.length; i++) {
-        var classItem = classes[i];
+        const item = classes[i];
+        const key = item.className + "-" + item.day;
+        if (seen[key]) {
+            // Already have this class on this day — it's a double mod, extend duration
+            seen[key].durationMinutes = 105;
+        } else {
+            const merged = Object.assign({}, item, { durationMinutes: 50 });
+            seen[key] = merged;
+            mergedClasses.push(merged);
+        }
+    }
+
+    for (var i = 0; i < mergedClasses.length; i++) {
+        var classItem = mergedClasses[i];
         try {
             const classEvents = createIcalEvent(classItem);
             allEvents.push(classEvents);
@@ -469,7 +486,8 @@ METHOD:PUBLISH
 ${allEvents.join('\n\n')}
 
 END:VCALENDAR`;
-    console.log(icalFile)
+    console.log(icalFile);
+    console.log(scheduleData);
     return icalFile;
 }
 
@@ -502,7 +520,7 @@ function createIcalEvent(classItem) {
     startDate.setHours(time.hours, time.minutes, 0, 0);
 
     const endDate = new Date(startDate);
-    endDate.setMinutes(endDate.getMinutes() + 50); // each mod is 50 minutes
+    endDate.setMinutes(endDate.getMinutes() + classItem.durationMinutes);
 
     const formatDateTime = (date) => {
         const year = date.getFullYear();
